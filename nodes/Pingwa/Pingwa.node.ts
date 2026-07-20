@@ -53,6 +53,12 @@ export class Pingwa implements INodeType {
             action: 'Ask a question and wait for a reply',
             description: 'Send a question and block until the human answers (or timeout)',
           },
+          {
+            name: 'Get Reply',
+            value: 'getReply',
+            action: 'Get the reply to a message',
+            description: 'Fetch the human reply to a previously sent message',
+          },
         ],
         default: 'notify',
       },
@@ -119,6 +125,23 @@ export class Pingwa implements INodeType {
         default: 'continue',
         displayOptions: { show: { operation: ['ask'] } },
       },
+      {
+        displayName: 'Message ID',
+        name: 'messageId',
+        type: 'string',
+        default: '',
+        required: true,
+        description: 'The ID returned by a prior Ask or Notify',
+        displayOptions: { show: { operation: ['getReply'] } },
+      },
+      {
+        displayName: 'Wait (Seconds)',
+        name: 'replyWait',
+        type: 'number',
+        default: 0,
+        description: 'Long-poll up to this many seconds for a reply. 0 = return immediately.',
+        displayOptions: { show: { operation: ['getReply'] } },
+      },
     ],
   };
 
@@ -155,6 +178,19 @@ export class Pingwa implements INodeType {
               json: { answered: false, timedOut: true, message_id: res.message_id ?? null },
               pairedItem: { item: i },
             });
+          } else {
+            out.push({ json: res, pairedItem: { item: i } });
+          }
+        }
+        if (operation === 'getReply') {
+          const messageId = this.getNodeParameter('messageId', i) as string;
+          const wait = this.getNodeParameter('replyWait', i, 0) as number;
+          const qs: IDataObject = wait > 0 ? { wait } : {};
+          const res = await pingwaApiRequest.call(
+            this, 'GET', `/v1/messages/${encodeURIComponent(messageId)}/reply`, undefined, qs, undefined, [408],
+          );
+          if ((res.__status as number) === 408) {
+            out.push({ json: { answered: false, message_id: messageId }, pairedItem: { item: i } });
           } else {
             out.push({ json: res, pairedItem: { item: i } });
           }
