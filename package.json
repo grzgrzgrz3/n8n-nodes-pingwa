@@ -1,0 +1,47 @@
+{
+  "name": "n8n-nodes-pingwa",
+  "version": "0.1.0",
+  "description": "n8n community node for pingwa — WhatsApp notifications and human-in-the-loop for AI agents.",
+  "keywords": ["n8n-community-node-package", "n8n", "pingwa", "whatsapp", "human-in-the-loop"],
+  "license": "MIT",
+  "homepage": "https://pingwa.dev",
+  "author": { "name": "Grzegorz Grzywacz", "email": "grzgrzgrz3@gmail.com" },
+  "repository": { "type": "git", "url": "git+https://github.com/grzgrzgrz3/n8n-nodes-pingwa.git" },
+  "engines": { "node": ">=18.10" },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.build.json && gulp build:icons",
+    "dev": "tsc -p tsconfig.build.json --watch",
+    "lint": "eslint nodes credentials package.json",
+    "lintfix": "eslint nodes credentials package.json --fix",
+    "test": "jest",
+    "prepublishOnly": "npm run build && npm run lint && npm test"
+  },
+  "files": ["dist"],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/PingwaApi.credentials.js",
+      "dist/credentials/PingwaOAuth2Api.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Pingwa/Pingwa.node.js",
+      "dist/nodes/PingwaTrigger/PingwaTrigger.node.js",
+      "dist/nodes/PingwaPollTrigger/PingwaPollTrigger.node.js"
+    ]
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.0",
+    "@typescript-eslint/parser": "^7.13.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "1.15.0",
+    "gulp": "^5.0.0",
+    "jest": "^29.7.0",
+    "n8n-workflow": "^1.60.0",
+    "prettier": "^3.3.0",
+    "ts-jest": "^29.1.5",
+    "typescript": "^5.4.5"
+  },
+  "peerDependencies": { "n8n-workflow": "*" }
+}
