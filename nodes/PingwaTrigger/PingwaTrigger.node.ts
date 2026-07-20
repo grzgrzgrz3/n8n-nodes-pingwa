@@ -65,9 +65,14 @@ export class PingwaTrigger implements INodeType {
         const res = await pingwaApiRequest.call(this, 'GET', '/v1/webhooks');
         const list = (res.webhooks as IDataObject[]) ?? [];
         const found = list.find((w) => w.url === webhookUrl);
-        if (found) {
+        if (found && data.webhookSecret) {
           data.webhookId = found.id;
           return true;
+        }
+        // Subscription exists on the server but we lost the (one-time) secret — delete
+        // the stale row so create() runs again and returns a fresh secret.
+        if (found) {
+          await pingwaApiRequest.call(this, 'DELETE', `/v1/webhooks/${encodeURIComponent(String(found.id))}`);
         }
         return false;
       },
@@ -84,7 +89,7 @@ export class PingwaTrigger implements INodeType {
       async delete(this: IHookFunctions): Promise<boolean> {
         const data = this.getWorkflowStaticData('node');
         if (data.webhookId) {
-          await pingwaApiRequest.call(this, 'DELETE', `/v1/webhooks/${data.webhookId}`);
+          await pingwaApiRequest.call(this, 'DELETE', `/v1/webhooks/${encodeURIComponent(String(data.webhookId))}`);
         }
         delete data.webhookId;
         delete data.webhookSecret;

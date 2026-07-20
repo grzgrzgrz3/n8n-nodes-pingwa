@@ -34,9 +34,9 @@ export class PingwaOAuth2Api implements ICredentialType {
     {
       displayName: 'Access Token URL',
       name: 'accessTokenUrl',
+      // eslint-disable-next-line n8n-nodes-base/node-param-type-options-password-missing
       type: 'string',
       default: 'https://pingwa.dev/oauth/token',
-      typeOptions: { password: true },
     },
   ];
 }
