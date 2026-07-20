@@ -10,8 +10,22 @@ import type {
   JsonObject,
 } from 'n8n-workflow';
 import { NodeApiError } from 'n8n-workflow';
+import { createHmac, timingSafeEqual } from 'crypto';
 
 type PingwaEnvelope = { error?: string; message?: string; action?: string };
+
+export function verifyPingwaSignature(
+  rawBody: Buffer,
+  header: string | undefined,
+  secret: string,
+): boolean {
+  if (!header || !header.startsWith('sha256=')) return false;
+  const expected = 'sha256=' + createHmac('sha256', secret).update(rawBody).digest('hex');
+  const a = Buffer.from(header);
+  const b = Buffer.from(expected);
+  if (a.length !== b.length) return false;
+  return timingSafeEqual(a, b);
+}
 
 export function mapPingwaError(body: unknown): string {
   if (body && typeof body === 'object') {
