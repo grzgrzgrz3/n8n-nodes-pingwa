@@ -1263,7 +1263,7 @@ Swap in `Pingwa Poll Trigger` (poll every minute). Send a reply; confirm it fire
 
 - [ ] **Step 3: OAuth2 one-click**
 
-Create a `Pingwa OAuth2 API` credential, click **Connect my account**, complete the pingwa consent in the browser, confirm the credential saves and the `Pingwa` Notify op works using it.
+Create a `Pingwa OAuth2 API` credential, click **Connect my account**, complete the pingwa consent in the browser, confirm the credential saves and the `Pingwa` Notify op works using it. Test BOTH consent paths (server plan Task 5 + 5b): (a) email/password login, and (b) "Continue with Google" — both must land back on the n8n callback with a working token. For staging, set the credential's `baseUrl`/`authUrl`/`accessTokenUrl` to the `pingwa.grzgrzgrz3.ovh` host.
 
 - [ ] **Step 4: Record results in the plan**
 
