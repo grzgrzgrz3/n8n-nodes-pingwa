@@ -5,6 +5,7 @@ import type {
   INodeTypeDescription,
   IDataObject,
 } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { pingwaApiRequest } from '../shared/GenericFunctions';
 
 export class Pingwa implements INodeType {
@@ -46,6 +47,12 @@ export class Pingwa implements INodeType {
             action: 'Send a notification',
             description: 'Fire-and-forget WhatsApp message',
           },
+          {
+            name: 'Ask',
+            value: 'ask',
+            action: 'Ask a question and wait for a reply',
+            description: 'Send a question and block until the human answers (or timeout)',
+          },
         ],
         default: 'notify',
       },
@@ -74,6 +81,44 @@ export class Pingwa implements INodeType {
         description: 'Optional — resending with the same key does not send twice',
         displayOptions: { show: { operation: ['notify'] } },
       },
+      {
+        displayName: 'Question',
+        name: 'askText',
+        type: 'string',
+        typeOptions: { rows: 3 },
+        default: '',
+        required: true,
+        displayOptions: { show: { operation: ['ask'] } },
+      },
+      {
+        displayName: 'Buttons',
+        name: 'buttons',
+        type: 'string',
+        typeOptions: { multipleValues: true },
+        default: [],
+        placeholder: 'Add button',
+        description: 'Optional reply buttons (titles). Cold sends fold them into the text as a numbered list.',
+        displayOptions: { show: { operation: ['ask'] } },
+      },
+      {
+        displayName: 'Timeout (Seconds)',
+        name: 'timeout',
+        type: 'number',
+        default: 0,
+        description: 'How long to wait for the human. 0 = server default. Server clamps to its max.',
+        displayOptions: { show: { operation: ['ask'] } },
+      },
+      {
+        displayName: 'On Timeout',
+        name: 'onTimeout',
+        type: 'options',
+        options: [
+          { name: 'Continue With Empty Reply', value: 'continue' },
+          { name: 'Fail the Node', value: 'error' },
+        ],
+        default: 'continue',
+        displayOptions: { show: { operation: ['ask'] } },
+      },
     ],
   };
 
@@ -92,6 +137,27 @@ export class Pingwa implements INodeType {
           const headers = idem ? { 'Idempotency-Key': idem } : undefined;
           const res = await pingwaApiRequest.call(this, 'POST', '/v1/notify', body, undefined, headers);
           out.push({ json: res, pairedItem: { item: i } });
+        }
+        if (operation === 'ask') {
+          const body: IDataObject = { text: this.getNodeParameter('askText', i) as string };
+          const buttons = this.getNodeParameter('buttons', i, []) as string[];
+          if (buttons.length) body.buttons = buttons;
+          const timeout = this.getNodeParameter('timeout', i, 0) as number;
+          if (timeout > 0) body.timeout = timeout;
+          const onTimeout = this.getNodeParameter('onTimeout', i, 'continue') as string;
+
+          const res = await pingwaApiRequest.call(this, 'POST', '/v1/ask', body, undefined, undefined, [408]);
+          if ((res.__status as number) === 408) {
+            if (onTimeout === 'error') {
+              throw new NodeOperationError(this.getNode(), 'No reply before timeout', { itemIndex: i });
+            }
+            out.push({
+              json: { answered: false, timedOut: true, message_id: res.message_id ?? null },
+              pairedItem: { item: i },
+            });
+          } else {
+            out.push({ json: res, pairedItem: { item: i } });
+          }
         }
       } catch (error) {
         if (this.continueOnFail()) {
