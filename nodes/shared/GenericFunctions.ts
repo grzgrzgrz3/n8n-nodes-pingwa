@@ -93,3 +93,38 @@ export async function pingwaApiRequest(
     httpCode: String(status),
   });
 }
+
+export interface InboxRow {
+  id: string;
+  body: string | null;
+  button_id: string | null;
+  reply_to_message_id: string | null;
+  wa_message_id: string | null;
+  created_at: string | null;
+}
+
+export interface InboundItem {
+  event: 'inbound_message';
+  message_id: string;
+  body: string | null;
+  button_id: string | null;
+  reply_to_message_id: string | null;
+  wa_message_id: string | null;
+  created_at: string | null;
+}
+
+export function inboxToItems(rows: InboxRow[]): InboundItem[] {
+  return rows.map((r) => ({
+    event: 'inbound_message',
+    message_id: r.id,
+    body: r.body,
+    button_id: r.button_id,
+    reply_to_message_id: r.reply_to_message_id,
+    wa_message_id: r.wa_message_id,
+    created_at: r.created_at,
+  }));
+}
+
+export function filterReplies(items: InboundItem[]): InboundItem[] {
+  return items.filter((i) => i.reply_to_message_id !== null && i.reply_to_message_id !== undefined);
+}
