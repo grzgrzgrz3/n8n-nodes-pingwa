@@ -1,0 +1,42 @@
+import type { ICredentialType, INodeProperties } from 'n8n-workflow';
+
+export class PingwaOAuth2Api implements ICredentialType {
+  name = 'pingwaOAuth2Api';
+  extends = ['oAuth2Api'];
+  displayName = 'Pingwa OAuth2 API';
+  documentationUrl = 'https://pingwa.dev';
+  properties: INodeProperties[] = [
+    { displayName: 'Grant Type', name: 'grantType', type: 'hidden', default: 'pkce' },
+    { displayName: 'Client ID', name: 'clientId', type: 'hidden', default: 'n8n' },
+    {
+      displayName: 'Client Secret',
+      name: 'clientSecret',
+      type: 'hidden',
+      default: '',
+      typeOptions: { password: true },
+    },
+    { displayName: 'Scope', name: 'scope', type: 'hidden', default: 'send inbox' },
+    { displayName: 'Authentication', name: 'authentication', type: 'hidden', default: 'header' },
+    // Visible so self-host / staging can retarget. Defaults = prod; most users never touch them.
+    {
+      displayName: 'Base URL',
+      name: 'baseUrl',
+      type: 'string',
+      default: 'https://pingwa.dev',
+      description: 'Pingwa API base for /v1 calls. Change only for self-host or staging.',
+    },
+    {
+      displayName: 'Authorization URL',
+      name: 'authUrl',
+      type: 'string',
+      default: 'https://pingwa.dev/oauth/authorize',
+    },
+    {
+      displayName: 'Access Token URL',
+      name: 'accessTokenUrl',
+      type: 'string',
+      default: 'https://pingwa.dev/oauth/token',
+      typeOptions: { password: true },
+    },
+  ];
+}
