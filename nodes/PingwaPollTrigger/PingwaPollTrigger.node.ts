@@ -54,6 +54,15 @@ export class PingwaPollTrigger implements INodeType {
   async poll(this: IPollFunctions): Promise<INodeExecutionData[][] | null> {
     const data = this.getWorkflowStaticData('node');
     const isManual = this.getMode() === 'manual';
+
+    // First production poll: baseline at activation time and emit nothing. Without a
+    // `since`, /v1/inbox returns the oldest messages — emitting them would flood a live
+    // workflow with the whole inbox history. Manual test runs skip this and fetch latest.
+    if (!isManual && !data.cursor) {
+      data.cursor = new Date().toISOString();
+      return null;
+    }
+
     const qs: IDataObject = { limit: 100 };
     if (!isManual && data.cursor) qs.since = data.cursor as string;
 

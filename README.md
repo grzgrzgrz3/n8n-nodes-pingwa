@@ -93,14 +93,15 @@ Output: `{ message_id, answered, reply }`.
 Add the node, pick **Events** (All Inbound Messages or Replies Only), and
 activate the workflow. n8n registers the webhook with pingwa automatically and
 removes it on deactivation. Each inbound WhatsApp message starts a new
-execution with `{ id, body, button_id, reply_to_message_id, wa_message_id,
-window_open, created_at, media? }`.
+execution with `{ event, message_id, body, button_id, reply_to_message_id,
+wa_message_id, window_open, created_at, media? }`.
 
 ### Pingwa Poll Trigger
 
 Add the node, pick **Events**, and activate. n8n polls `/v1/inbox` on its
 configured interval and starts an execution for each new row since the last
-poll. Same fields as the webhook trigger, minus `media`.
+poll. Same fields as the webhook trigger, minus `window_open` and `media`
+(the `/v1/inbox` endpoint does not return them).
 
 ## License
 

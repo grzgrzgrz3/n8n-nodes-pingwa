@@ -6,6 +6,7 @@ import type {
   IWebhookResponseData,
   IDataObject,
 } from 'n8n-workflow';
+import { NodeOperationError } from 'n8n-workflow';
 import { pingwaApiRequest, filterReplies, verifyPingwaSignature, InboundItem } from '../shared/GenericFunctions';
 
 export class PingwaTrigger implements INodeType {
@@ -80,6 +81,11 @@ export class PingwaTrigger implements INodeType {
       async create(this: IHookFunctions): Promise<boolean> {
         const webhookUrl = this.getNodeWebhookUrl('default');
         const res = await pingwaApiRequest.call(this, 'POST', '/v1/webhooks', { url: webhookUrl });
+        if (!res.secret) {
+          // Without the signing secret every delivery would fail verification and be
+          // dropped silently — fail loudly at activation instead.
+          throw new NodeOperationError(this.getNode(), 'pingwa did not return a webhook signing secret');
+        }
         const data = this.getWorkflowStaticData('node');
         data.webhookId = res.id;
         data.webhookSecret = res.secret; // shown once; needed to verify signatures
@@ -89,7 +95,12 @@ export class PingwaTrigger implements INodeType {
       async delete(this: IHookFunctions): Promise<boolean> {
         const data = this.getWorkflowStaticData('node');
         if (data.webhookId) {
-          await pingwaApiRequest.call(this, 'DELETE', `/v1/webhooks/${encodeURIComponent(String(data.webhookId))}`);
+          try {
+            await pingwaApiRequest.call(this, 'DELETE', `/v1/webhooks/${encodeURIComponent(String(data.webhookId))}`);
+          } catch {
+            // Row already gone (404) or transient error — local cleanup below must
+            // still run so re-activation issues a fresh subscription.
+          }
         }
         delete data.webhookId;
         delete data.webhookSecret;
@@ -108,15 +119,23 @@ export class PingwaTrigger implements INodeType {
     // Verify the EXACT bytes pingwa signed. With rawBody:true set on the webhook
     // descriptor, n8n populates req.rawBody. If it is somehow absent, reject rather
     // than re-serialize (JS JSON.stringify never matches Python json.dumps spacing).
+    // We take over the HTTP response on the reject/skip paths (noWebhookResponse),
+    // so we MUST write it ourselves — otherwise the connection hangs until pingwa's
+    // delivery times out and retries pile up.
+    const resp = this.getResponseObject();
     const rawBody = (req as unknown as { rawBody?: Buffer }).rawBody;
     if (!secret || !rawBody || !verifyPingwaSignature(rawBody, signature, secret)) {
-      return { noWebhookResponse: true }; // reject silently; do not emit
+      resp.status(401).end(); // bad/absent signature: reject, do not emit
+      return { noWebhookResponse: true };
     }
 
     const payload = this.getBodyData() as unknown as InboundItem;
     const events = this.getNodeParameter('events') as string;
     const items = events === 'replies' ? filterReplies([payload]) : [payload];
-    if (!items.length) return { noWebhookResponse: true };
+    if (!items.length) {
+      resp.status(200).end(); // authentic but filtered out (e.g. not a reply): ack, don't retry
+      return { noWebhookResponse: true };
+    }
 
     return { workflowData: [this.helpers.returnJsonArray(items as unknown as IDataObject[])] };
   }

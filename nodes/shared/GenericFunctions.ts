@@ -58,6 +58,7 @@ export async function pingwaApiRequest(
   qs?: IDataObject,
   headers?: Record<string, string>,
   acceptStatuses: number[] = [],
+  timeoutMs?: number,
 ): Promise<IDataObject> {
   // 'authentication' is a static node option (same for every item), so reading it at
   // item index 0 is correct in execute context; hook/poll/webhook contexts ignore the
@@ -82,6 +83,9 @@ export async function pingwaApiRequest(
     returnFullResponse: true,
     ignoreHttpStatusErrors: true,
   };
+  // For long-poll calls (Ask/Get Reply) the client must outwait the server's poll,
+  // else n8n's default request timeout aborts before the 408 comes back.
+  if (timeoutMs && timeoutMs > 0) options.timeout = timeoutMs;
 
   const response = await this.helpers.httpRequestWithAuthentication.call(this, credName, options);
   const status = response.statusCode as number;

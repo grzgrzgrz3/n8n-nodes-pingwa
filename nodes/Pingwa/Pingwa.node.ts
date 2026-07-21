@@ -169,7 +169,10 @@ export class Pingwa implements INodeType {
           if (timeout > 0) body.timeout = timeout;
           const onTimeout = this.getNodeParameter('onTimeout', i, 'continue') as string;
 
-          const res = await pingwaApiRequest.call(this, 'POST', '/v1/ask', body, undefined, undefined, [408]);
+          const res = await pingwaApiRequest.call(
+            this, 'POST', '/v1/ask', body, undefined, undefined, [408],
+            timeout > 0 ? (timeout + 15) * 1000 : undefined,
+          );
           if ((res.__status as number) === 408) {
             if (onTimeout === 'error') {
               throw new NodeOperationError(this.getNode(), 'No reply before timeout', { itemIndex: i });
@@ -188,6 +191,7 @@ export class Pingwa implements INodeType {
           const qs: IDataObject = wait > 0 ? { wait } : {};
           const res = await pingwaApiRequest.call(
             this, 'GET', `/v1/messages/${encodeURIComponent(messageId)}/reply`, undefined, qs, undefined, [408],
+            wait > 0 ? (wait + 15) * 1000 : undefined,
           );
           if ((res.__status as number) === 408) {
             out.push({ json: { answered: false, message_id: messageId }, pairedItem: { item: i } });

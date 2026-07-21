@@ -8,7 +8,8 @@ import type {
 export class PingwaApi implements ICredentialType {
   name = 'pingwaApi';
   displayName = 'Pingwa API';
-  documentationUrl = 'https://pingwa.dev';
+  // eslint-disable-next-line n8n-nodes-base/cred-class-field-documentation-url-miscased -- rule's autofix mangles valid URLs into camelCase
+  documentationUrl = 'https://pingwa.dev/docs';
   properties: INodeProperties[] = [
     {
       displayName: 'How to get a key',

@@ -4,7 +4,8 @@ export class PingwaOAuth2Api implements ICredentialType {
   name = 'pingwaOAuth2Api';
   extends = ['oAuth2Api'];
   displayName = 'Pingwa OAuth2 API';
-  documentationUrl = 'https://pingwa.dev';
+  // eslint-disable-next-line n8n-nodes-base/cred-class-field-documentation-url-miscased -- rule's autofix mangles valid URLs into camelCase
+  documentationUrl = 'https://pingwa.dev/docs';
   properties: INodeProperties[] = [
     { displayName: 'Grant Type', name: 'grantType', type: 'hidden', default: 'pkce' },
     { displayName: 'Client ID', name: 'clientId', type: 'hidden', default: 'n8n' },
