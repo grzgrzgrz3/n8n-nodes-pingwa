@@ -12,10 +12,11 @@ export class Pingwa implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Pingwa',
     name: 'pingwa',
-    icon: 'file:pingwa.svg',
+    icon: { light: 'file:pingwa.svg', dark: 'file:pingwa.dark.svg' },
     group: ['output'],
     version: 1,
-    subtitle: '={{$parameter["operation"]}}',
+    usableAsTool: true,
+    subtitle: '={{ ({ notify: "Notify", ask: "Ask", getReply: "Get Reply" })[$parameter["operation"]] }}',
     description: 'Send WhatsApp notifications and human-in-the-loop questions via pingwa',
     defaults: { name: 'Pingwa' },
     inputs: ['main'],
@@ -69,6 +70,8 @@ export class Pingwa implements INodeType {
         typeOptions: { rows: 3 },
         default: '',
         required: true,
+        placeholder: 'e.g. Backup finished: 42 GB in 6 minutes',
+        description: 'The WhatsApp message to send to your own linked number',
         displayOptions: { show: { operation: ['notify'] } },
       },
       {
@@ -94,6 +97,8 @@ export class Pingwa implements INodeType {
         typeOptions: { rows: 3 },
         default: '',
         required: true,
+        placeholder: 'e.g. Approve the $4,200 refund?',
+        description: 'The question to send. The workflow pauses on this node until you answer or it times out.',
         displayOptions: { show: { operation: ['ask'] } },
       },
       {
@@ -111,6 +116,7 @@ export class Pingwa implements INodeType {
         name: 'timeout',
         type: 'number',
         default: 0,
+        typeOptions: { minValue: 0 },
         description: 'How long to wait for the human. 0 = server default. Server clamps to its max.',
         displayOptions: { show: { operation: ['ask'] } },
       },
@@ -152,6 +158,13 @@ export class Pingwa implements INodeType {
     for (let i = 0; i < items.length; i++) {
       try {
         const operation = this.getNodeParameter('operation', i) as string;
+        if (!['notify', 'ask', 'getReply'].includes(operation)) {
+          throw new NodeOperationError(
+            this.getNode(),
+            `The operation "${operation}" is not supported`,
+            { itemIndex: i },
+          );
+        }
         if (operation === 'notify') {
           const body: IDataObject = { text: this.getNodeParameter('text', i) as string };
           const imageUrl = this.getNodeParameter('imageUrl', i, '') as string;

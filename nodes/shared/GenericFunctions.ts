@@ -27,14 +27,20 @@ export function verifyPingwaSignature(
   return timingSafeEqual(a, b);
 }
 
-export function mapPingwaError(body: unknown): string {
+/**
+ * Split a pingwa error envelope into what happened (message) and how to fix it
+ * (description), matching how n8n surfaces the two in the UI. `action` is the
+ * remediation hint, so it belongs in the description, not glued onto the message.
+ */
+export function mapPingwaError(body: unknown): { message: string; description?: string } {
   if (body && typeof body === 'object') {
     const e = body as PingwaEnvelope;
-    const parts = [e.message, e.action].filter((s): s is string => typeof s === 'string' && s.length > 0);
-    if (parts.length) return parts.join(' ');
-    if (typeof e.error === 'string' && e.error.length) return e.error;
+    const message =
+      e.message && e.message.length ? e.message : e.error && e.error.length ? e.error : undefined;
+    const description = e.action && e.action.length ? e.action : undefined;
+    if (message) return { message, description };
   }
-  return 'Pingwa request failed';
+  return { message: 'Pingwa did not accept the request' };
 }
 
 type RequestContext =
@@ -92,8 +98,10 @@ export async function pingwaApiRequest(
   if (status >= 200 && status < 300) return response.body as IDataObject;
   if (acceptStatuses.includes(status)) return { __status: status, ...(response.body as IDataObject) };
 
+  const { message, description } = mapPingwaError(response.body);
   throw new NodeApiError(this.getNode(), response.body as JsonObject, {
-    message: mapPingwaError(response.body),
+    message,
+    description,
     httpCode: String(status),
   });
 }

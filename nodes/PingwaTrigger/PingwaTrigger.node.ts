@@ -13,10 +13,10 @@ export class PingwaTrigger implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Pingwa Trigger',
     name: 'pingwaTrigger',
-    icon: 'file:pingwa.svg',
+    icon: { light: 'file:pingwa.svg', dark: 'file:pingwa.dark.svg' },
     group: ['trigger'],
     version: 1,
-    subtitle: '=Events: {{$parameter["events"]}}',
+    subtitle: '={{ ({ all: "All Inbound Messages", replies: "Replies Only" })[$parameter["events"]] }}',
     description: 'Starts the workflow when someone replies on WhatsApp via pingwa (webhook)',
     eventTriggerDescription: 'Waiting for an inbound WhatsApp message via pingwa',
     activationMessage: 'You can now receive inbound WhatsApp messages from pingwa.',
@@ -84,7 +84,7 @@ export class PingwaTrigger implements INodeType {
         if (!res.secret) {
           // Without the signing secret every delivery would fail verification and be
           // dropped silently — fail loudly at activation instead.
-          throw new NodeOperationError(this.getNode(), 'pingwa did not return a webhook signing secret');
+          throw new NodeOperationError(this.getNode(), 'Pingwa did not return a webhook signing secret');
         }
         const data = this.getWorkflowStaticData('node');
         data.webhookId = res.id;

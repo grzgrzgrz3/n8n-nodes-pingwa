@@ -11,11 +11,11 @@ export class PingwaPollTrigger implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Pingwa Poll Trigger',
     name: 'pingwaPollTrigger',
-    icon: 'file:pingwa.svg',
+    icon: { light: 'file:pingwa.svg', dark: 'file:pingwa.dark.svg' },
     group: ['trigger'],
     version: 1,
     polling: true,
-    subtitle: '=Events: {{$parameter["events"]}}',
+    subtitle: '={{ ({ all: "All Inbound Messages", replies: "Replies Only" })[$parameter["events"]] }}',
     description: 'Polls pingwa for inbound WhatsApp messages (use when n8n has no public URL)',
     eventTriggerDescription: 'Waiting for an inbound WhatsApp message via pingwa',
     activationMessage: 'You can now receive inbound WhatsApp messages from pingwa.',
