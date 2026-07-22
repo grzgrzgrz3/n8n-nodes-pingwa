@@ -1,11 +1,20 @@
 # n8n-nodes-pingwa
 
-n8n community node for [pingwa](https://pingwa.dev) — WhatsApp notifications and
-human-in-the-loop for AI agents and workflows. Send a message, ask a question and
-wait for a human's answer, or fetch a reply later. Two triggers pick up inbound
-WhatsApp messages: a webhook trigger and a poll trigger.
+Send WhatsApp messages from n8n — and **ask a human a question and wait for the
+answer** — without owning a WhatsApp number or touching the Meta API.
 
-## Install
+This is the community node for [pingwa](https://pingwa.dev). Your agent notifies
+you on WhatsApp, asks you to approve or reject a step, and reads your reply back
+into the workflow.
+
+## Setup takes about 30 seconds
+
+Other WhatsApp nodes make you bring your own number and register it with the
+WhatsApp Business API — Meta business verification, a phone number, a review that
+can take days. Pingwa needs none of that. Pingwa owns the number; you just link
+your own WhatsApp to it.
+
+### 1. Install the node
 
 In n8n: **Settings → Community Nodes → Install**, then enter:
 
@@ -13,45 +22,51 @@ In n8n: **Settings → Community Nodes → Install**, then enter:
 n8n-nodes-pingwa
 ```
 
-n8n installs the package and the `Pingwa`, `Pingwa Trigger`, and `Pingwa Poll
-Trigger` nodes appear in the node panel.
+The `Pingwa`, `Pingwa Trigger`, and `Pingwa Poll Trigger` nodes appear in the
+node panel.
 
-## Credentials
+![Pingwa nodes in the n8n node panel](docs/img/node-panel.png)
 
-Every node needs a pingwa credential. Pick one of two types.
+### 2. Get connected — pick one
 
-### API Key (fastest)
+**One-click (easiest):**
 
-1. Open WhatsApp and send the word `join` to the pingwa number.
-2. Pingwa replies with your API key (`pw_...`).
-3. In n8n, add a **Pingwa API** credential and paste the key.
+1. Add a **Pingwa OAuth2 API** credential and click **Connect**.
 
-Leave **Base URL** at its default (`https://pingwa.dev`) unless you run a
-self-hosted or staging instance.
+   ![Pingwa OAuth2 credential with the Connect button](docs/img/oauth-connect.png)
 
-### OAuth2 (one-click)
+2. A pingwa tab opens. **Continue with Google** (or connect a number directly).
 
-1. In n8n, add a **Pingwa OAuth2 API** credential.
-2. Click **Connect my account**.
-3. Approve the request in the browser tab that opens.
+   ![Authorize n8n screen with Continue with Google](docs/img/oauth-consent.png)
 
-n8n stores and refreshes the token. No key to copy.
+3. Choose which WhatsApp number n8n sends and receives on, or add a new one.
 
-## Webhook vs. poll trigger
+   ![Which number for n8n — pick an existing number or add a new one](docs/img/oauth-pick-number.png)
 
-Use **Pingwa Trigger** (webhook) if your n8n instance is reachable on a public
-`https` URL. Pingwa registers a webhook on activation and pushes each inbound
-message the moment it arrives.
+4. New number only — tap **Open WhatsApp & verify** and send the pre-filled
+   message (or scan the QR from another phone). Pingwa spots it and continues on
+   its own. No code to type.
 
-Use **Pingwa Poll Trigger** if n8n has no public URL (local, LAN-only, behind a
-firewall). It pulls `/v1/inbox` on an interval instead.
+   ![Verify your WhatsApp screen with the Open WhatsApp and verify button](docs/img/oauth-verify.png)
 
-One gap to know: inbound media (images, voice notes, attachments) arrives only
-through the webhook. Poll rows carry text, button clicks, and reply
-references, but no media field — pingwa does not backfill it into the poll
-inbox.
+5. The tab closes and n8n stores the token, refreshing it for you from then on.
 
-## Node examples
+Picking a number that is already verified skips step 4 — you go straight back to
+n8n.
+
+**API key (no browser step):**
+
+1. Open WhatsApp and send `join` to the pingwa number.
+2. Pingwa replies with your key (`pw_...`).
+3. Add a **Pingwa API** credential and paste it.
+
+That is the whole setup. Messages go to *your own* WhatsApp — there is no
+recipient to configure and no way to spam anyone else.
+
+> Leave **Base URL** at its default (`https://pingwa.dev`). Change it only if you
+> run a self-hosted or staging pingwa.
+
+## The nodes
 
 ### Pingwa — Notify
 
@@ -66,8 +81,8 @@ Output: `{ id, billing_class, status }`
 
 ### Pingwa — Ask
 
-Send a question and block the workflow until the human answers, or until
-timeout.
+Send a question and hold the workflow until you answer, or until timeout. This is
+the human-in-the-loop step nothing else on WhatsApp gives you.
 
 - **Operation**: Ask
 - **Question**: `Approve the $4,200 refund?`
@@ -78,30 +93,34 @@ timeout.
 Output: `{ message_id, billing_class, answered, reply }`. On timeout with
 "Continue" selected: `{ answered: false, timedOut: true, message_id }`.
 
+![Pingwa Ask node configured with a question and Approve / Reject buttons](docs/img/ask-node.png)
+
 ### Pingwa — Get Reply
 
-Fetch the reply to a message sent earlier (by Ask or Notify).
+Fetch the reply to a message sent earlier (by Ask or Notify) without holding an
+execution open.
 
 - **Operation**: Get Reply
 - **Message ID**: the `id` from a prior Notify or Ask
-- **Wait (Seconds)**: long-poll up to this many seconds; `0` returns immediately
+- **Wait (Seconds)**: long-poll up to this many seconds; `0` returns at once
 
-Output: `{ message_id, answered, reply }`.
+Output: `{ message_id, answered, reply }`
 
-### Pingwa Trigger (webhook)
+### Pingwa Trigger (webhook) vs Pingwa Poll Trigger
 
-Add the node, pick **Events** (All Inbound Messages or Replies Only), and
-activate the workflow. n8n registers the webhook with pingwa automatically and
-removes it on deactivation. Each inbound WhatsApp message starts a new
-execution with `{ event, message_id, body, button_id, reply_to_message_id,
-wa_message_id, window_open, created_at, media? }`.
+Both start a workflow on an inbound WhatsApp message. Pick by how your n8n is
+reachable:
 
-### Pingwa Poll Trigger
+- **Pingwa Trigger** — use if n8n has a public `https` URL. Pingwa registers a
+  webhook on activation and removes it on deactivation, and pushes each message
+  the moment it arrives. Emits `{ event, message_id, body, button_id,
+  reply_to_message_id, wa_message_id, window_open, created_at, media? }`.
+- **Pingwa Poll Trigger** — use if n8n is local, LAN-only, or behind a firewall.
+  It pulls `/v1/inbox` on an interval. Same fields **minus `window_open` and
+  `media`** — the `/v1/inbox` endpoint does not return them, so inbound images
+  and voice notes arrive only through the webhook.
 
-Add the node, pick **Events**, and activate. n8n polls `/v1/inbox` on its
-configured interval and starts an execution for each new row since the last
-poll. Same fields as the webhook trigger, minus `window_open` and `media`
-(the `/v1/inbox` endpoint does not return them).
+Both nodes take an **Events** option: All Inbound Messages or Replies Only.
 
 ## License
 
