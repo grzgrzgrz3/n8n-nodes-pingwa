@@ -19,10 +19,13 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '22'
           registry-url: 'https://registry.npmjs.org'
 
-      - run: npm ci
+      # --ignore-scripts skips native builds of dev-only transitive deps
+      # (n8n-workflow → isolated-vm). Nothing we build/test/publish loads them;
+      # the package ships only dist/.
+      - run: npm ci --ignore-scripts
 
       - run: npm run build
 
