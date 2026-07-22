@@ -17,7 +17,7 @@ export class PingwaTrigger implements INodeType {
     group: ['trigger'],
     version: 1,
     subtitle: '={{ ({ all: "All Inbound Messages", replies: "Replies Only" })[$parameter["events"]] }}',
-    description: 'Starts the workflow when someone replies on WhatsApp via pingwa (webhook)',
+    description: 'Starts the workflow when a WhatsApp message arrives via pingwa (webhook)',
     eventTriggerDescription: 'Waiting for an inbound WhatsApp message via pingwa',
     activationMessage: 'You can now receive inbound WhatsApp messages from pingwa.',
     defaults: { name: 'Pingwa Trigger' },

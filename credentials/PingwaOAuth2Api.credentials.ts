@@ -13,7 +13,7 @@ export class PingwaOAuth2Api implements ICredentialType {
       type: 'notice',
       default: '',
       description:
-        'No client ID or secret to enter — the defaults target pingwa.dev. Click "Connect", sign in, and pick the WhatsApp number to use.',
+        'No client ID or secret to enter. The defaults target pingwa.dev. Click "Connect", sign in, and pick the WhatsApp number to use.',
     },
     { displayName: 'Grant Type', name: 'grantType', type: 'hidden', default: 'pkce' },
     { displayName: 'Client ID', name: 'clientId', type: 'hidden', default: 'n8n' },
