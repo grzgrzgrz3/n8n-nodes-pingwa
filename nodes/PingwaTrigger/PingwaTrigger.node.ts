@@ -6,7 +6,7 @@ import type {
   IWebhookResponseData,
   IDataObject,
 } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { pingwaApiRequest, filterReplies, verifyPingwaSignature, InboundItem } from '../shared/GenericFunctions';
 
 export class PingwaTrigger implements INodeType {
@@ -16,13 +16,15 @@ export class PingwaTrigger implements INodeType {
     icon: { light: 'file:pingwa.svg', dark: 'file:pingwa.dark.svg' },
     group: ['trigger'],
     version: 1,
+    // Required by n8n verification lint; inert on a trigger (only action nodes become tools).
+    usableAsTool: true,
     subtitle: '={{ ({ all: "All Inbound Messages", replies: "Replies Only" })[$parameter["events"]] }}',
     description: 'Starts the workflow when a WhatsApp message arrives via pingwa (webhook)',
     eventTriggerDescription: 'Waiting for an inbound WhatsApp message via pingwa',
     activationMessage: 'You can now receive inbound WhatsApp messages from pingwa.',
     defaults: { name: 'Pingwa Trigger' },
     inputs: [],
-    outputs: ['main'],
+    outputs: [NodeConnectionTypes.Main],
     credentials: [
       { name: 'pingwaApi', required: true, displayOptions: { show: { authentication: ['pingwaApi'] } } },
       { name: 'pingwaOAuth2Api', required: true, displayOptions: { show: { authentication: ['pingwaOAuth2Api'] } } },

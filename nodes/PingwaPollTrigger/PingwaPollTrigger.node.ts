@@ -5,6 +5,7 @@ import type {
   INodeExecutionData,
   IDataObject,
 } from 'n8n-workflow';
+import { NodeConnectionTypes } from 'n8n-workflow';
 import { pingwaApiRequest, inboxToItems, filterReplies, InboxRow } from '../shared/GenericFunctions';
 
 export class PingwaPollTrigger implements INodeType {
@@ -15,13 +16,15 @@ export class PingwaPollTrigger implements INodeType {
     group: ['trigger'],
     version: 1,
     polling: true,
+    // Required by n8n verification lint; inert on a trigger (only action nodes become tools).
+    usableAsTool: true,
     subtitle: '={{ ({ all: "All Inbound Messages", replies: "Replies Only" })[$parameter["events"]] }}',
     description: 'Polls pingwa for inbound WhatsApp messages (use when n8n has no public URL)',
     eventTriggerDescription: 'Waiting for an inbound WhatsApp message via pingwa',
     activationMessage: 'You can now receive inbound WhatsApp messages from pingwa.',
     defaults: { name: 'Pingwa Poll Trigger' },
     inputs: [],
-    outputs: ['main'],
+    outputs: [NodeConnectionTypes.Main],
     credentials: [
       { name: 'pingwaApi', required: true, displayOptions: { show: { authentication: ['pingwaApi'] } } },
       { name: 'pingwaOAuth2Api', required: true, displayOptions: { show: { authentication: ['pingwaOAuth2Api'] } } },

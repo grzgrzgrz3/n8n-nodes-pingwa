@@ -145,8 +145,9 @@ surface.
 
 ## Compatibility
 
-Built and tested against n8n node API version 1 (n8n 1.60 and later). Requires
-Node.js 20.15 or later, which matches n8n's own runtime.
+Built and tested against n8n node API version 1. Needs **n8n 1.83 or later** —
+that is the first release whose `n8n-workflow` exports `NodeConnectionTypes`, which
+the node uses. Requires Node.js 20.15 or later, which matches n8n's own runtime.
 
 ## Usage
 
@@ -164,6 +165,8 @@ Node.js 20.15 or later, which matches n8n's own runtime.
 
 ## Version history
 
+- **0.1.5**: Passes the n8n verification ruleset — credential icons, typed
+  connection types, wrapped API errors. Needs n8n 1.83 or later.
 - **0.1.4**: Plainer wording in the README and node fields.
 - **0.1.3**: README and node-panel polish (light and dark icon, labelled
   subtitles, field placeholders). Usable as an AI Agent tool. Published with npm

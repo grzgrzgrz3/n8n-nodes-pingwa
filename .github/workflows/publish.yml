@@ -31,6 +31,11 @@ jobs:
 
       - run: npm run lint
 
+      # n8n's own verification ruleset — the Creator Portal pre-check runs the same
+      # rules over this source, and they contradict eslint-plugin-n8n-nodes-base in
+      # places, so a green `npm run lint` proves nothing about verification.
+      - run: npm run lint:verify
+
       - run: npm test
 
       - run: npm publish --provenance --access public

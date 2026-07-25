@@ -1,24 +1,43 @@
 {
   "name": "n8n-nodes-pingwa",
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "n8n community node for the pingwa API — notify yourself on WhatsApp and get human-in-the-loop approvals for AI agents (hosted number, no Meta setup).",
-  "keywords": ["n8n-community-node-package", "n8n", "pingwa", "whatsapp", "human-in-the-loop"],
+  "keywords": [
+    "n8n-community-node-package",
+    "n8n",
+    "pingwa",
+    "whatsapp",
+    "human-in-the-loop"
+  ],
   "license": "MIT",
   "homepage": "https://pingwa.dev",
-  "author": { "name": "Grzegorz Grzywacz", "email": "grzgrzgrz3@gmail.com" },
-  "repository": { "type": "git", "url": "git+https://github.com/grzgrzgrz3/n8n-nodes-pingwa.git" },
-  "bugs": { "url": "https://github.com/grzgrzgrz3/n8n-nodes-pingwa/issues" },
-  "engines": { "node": ">=20.15" },
-  "main": "index.js",
+  "author": {
+    "name": "Grzegorz Grzywacz",
+    "email": "grzgrzgrz3@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/grzgrzgrz3/n8n-nodes-pingwa.git"
+  },
+  "bugs": {
+    "url": "https://github.com/grzgrzgrz3/n8n-nodes-pingwa/issues"
+  },
+  "engines": {
+    "node": ">=20.15"
+  },
+  "main": "dist/index.js",
   "scripts": {
     "build": "tsc -p tsconfig.build.json && gulp build:icons",
     "dev": "tsc -p tsconfig.build.json --watch",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
+    "lint:verify": "node scripts/verify-lint.mjs",
     "test": "jest",
-    "prepublishOnly": "npm run build && npm run lint && npm test"
+    "prepublishOnly": "npm run build && npm run lint && npm run lint:verify && npm test"
   },
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "n8n": {
     "n8nNodesApiVersion": 1,
     "credentials": [
@@ -39,10 +58,12 @@
     "eslint-plugin-n8n-nodes-base": "1.15.0",
     "gulp": "^5.0.0",
     "jest": "^29.7.0",
-    "n8n-workflow": "^1.60.0",
+    "n8n-workflow": "^1.120.22",
     "prettier": "^3.3.0",
     "ts-jest": "^29.1.5",
     "typescript": "^5.4.5"
   },
-  "peerDependencies": { "n8n-workflow": "*" }
+  "peerDependencies": {
+    "n8n-workflow": "*"
+  }
 }

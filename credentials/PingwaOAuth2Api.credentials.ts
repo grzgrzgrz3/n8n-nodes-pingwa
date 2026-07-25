@@ -1,9 +1,10 @@
-import type { ICredentialType, INodeProperties } from 'n8n-workflow';
+import type { ICredentialType, Icon, INodeProperties } from 'n8n-workflow';
 
 export class PingwaOAuth2Api implements ICredentialType {
   name = 'pingwaOAuth2Api';
   extends = ['oAuth2Api'];
   displayName = 'Pingwa OAuth2 API';
+  icon: Icon = { light: 'file:pingwa.svg', dark: 'file:pingwa.dark.svg' };
   // eslint-disable-next-line n8n-nodes-base/cred-class-field-documentation-url-miscased -- rule's autofix mangles valid URLs into camelCase
   documentationUrl = 'https://pingwa.dev/docs';
   properties: INodeProperties[] = [

@@ -4,8 +4,9 @@ import type {
   INodeType,
   INodeTypeDescription,
   IDataObject,
+  JsonObject,
 } from 'n8n-workflow';
-import { NodeOperationError } from 'n8n-workflow';
+import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
 import { pingwaApiRequest } from '../shared/GenericFunctions';
 
 export class Pingwa implements INodeType {
@@ -19,8 +20,8 @@ export class Pingwa implements INodeType {
     subtitle: '={{ ({ notify: "Notify", ask: "Ask", getReply: "Get Reply" })[$parameter["operation"]] }}',
     description: 'Send WhatsApp notifications and human-in-the-loop questions via pingwa',
     defaults: { name: 'Pingwa' },
-    inputs: ['main'],
-    outputs: ['main'],
+    inputs: [NodeConnectionTypes.Main],
+    outputs: [NodeConnectionTypes.Main],
     credentials: [
       { name: 'pingwaApi', required: true, displayOptions: { show: { authentication: ['pingwaApi'] } } },
       { name: 'pingwaOAuth2Api', required: true, displayOptions: { show: { authentication: ['pingwaOAuth2Api'] } } },
@@ -217,7 +218,13 @@ export class Pingwa implements INodeType {
           out.push({ json: { error: (error as Error).message }, pairedItem: { item: i } });
           continue;
         }
-        throw error;
+        // Always wrap: n8n verification forbids re-throwing the raw catch value, and
+        // NodeApiError keeps the HTTP context that the n8n UI shows. `message` is passed
+        // explicitly so text from a NodeOperationError raised above survives the wrap.
+        throw new NodeApiError(this.getNode(), error as JsonObject, {
+          itemIndex: i,
+          message: (error as Error).message,
+        });
       }
     }
     return [out];
