@@ -13,7 +13,7 @@
  * scanner's ts-api-utils.
  */
 import { execFileSync } from 'node:child_process';
-import { existsSync, mkdirSync } from 'node:fs';
+import { existsSync, mkdirSync, readFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 
@@ -22,8 +22,32 @@ const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const cacheDir = join(repoRoot, 'node_modules', '.cache', 'n8n-verify');
 const scannerEntry = join(cacheDir, 'node_modules', '@n8n', 'scan-community-package', 'scanner', 'scanner.mjs');
 
-if (!existsSync(scannerEntry)) {
-  console.log(`Installing ${SCANNER} into ${cacheDir} ...`);
+/**
+ * The cache must track the published beta, not the version that happened to be current
+ * when the cache was first written. n8n adds rules to the beta between our releases:
+ * `no-silent-error-swallowing` landed in the plugin after we cached scanner 0.29.1, so a
+ * frozen cache said "passed" while the portal's fresh @beta failed the same code.
+ */
+function publishedBetaVersion() {
+  try {
+    return execFileSync('npm', ['view', SCANNER, 'version'], { encoding: 'utf8' }).trim();
+  } catch {
+    return null; // offline: fall back to whatever is cached
+  }
+}
+
+function cachedVersion() {
+  const manifest = join(cacheDir, 'node_modules', '@n8n', 'scan-community-package', 'package.json');
+  if (!existsSync(manifest)) return null;
+  return JSON.parse(readFileSync(manifest, 'utf8')).version;
+}
+
+const wanted = publishedBetaVersion();
+const cached = cachedVersion();
+
+if (!existsSync(scannerEntry) || (wanted && wanted !== cached)) {
+  const why = cached ? `cached ${cached}, published beta ${wanted}` : 'not cached yet';
+  console.log(`Installing ${SCANNER} into ${cacheDir} (${why}) ...`);
   mkdirSync(cacheDir, { recursive: true });
   execFileSync(
     'npm',
@@ -31,6 +55,8 @@ if (!existsSync(scannerEntry)) {
     ['install', '--prefix', cacheDir, '--no-save', '--no-audit', '--no-fund', '--ignore-scripts', SCANNER],
     { stdio: 'inherit' },
   );
+} else if (!wanted) {
+  console.warn(`⚠ npm unreachable — linting with the cached scanner ${cached}, which may be behind the portal`);
 }
 
 const { analyzePackage, SOURCE_FILE_PATTERNS } = await import(pathToFileURL(scannerEntry).href);
