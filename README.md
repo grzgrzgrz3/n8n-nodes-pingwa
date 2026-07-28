@@ -28,8 +28,7 @@ to **Settings → Community Nodes → Install** and enter:
 n8n-nodes-pingwa
 ```
 
-The `Pingwa`, `Pingwa Trigger`, and `Pingwa Poll Trigger` nodes then appear in the
-node panel.
+The `Pingwa` and `Pingwa Trigger` nodes then appear in the node panel.
 
 ![Pingwa nodes in the n8n node panel](https://raw.githubusercontent.com/grzgrzgrz3/n8n-nodes-pingwa/main/docs/img/node-panel.png)
 
@@ -69,21 +68,24 @@ an execution open.
 
 Output: `{ message_id, answered, reply }`
 
-### Pingwa Trigger vs Pingwa Poll Trigger
+### Pingwa Trigger
 
-Both start a workflow when a WhatsApp message comes in. Pick the one that matches
-how your n8n is reachable.
+Starts a workflow when a WhatsApp message comes in. The **Delivery** option says how the
+message reaches n8n. Pick the one that matches how your n8n is reachable.
 
-- **Pingwa Trigger**: use this if n8n has a public `https` URL. pingwa registers a
+- **Webhook** (default): use this if n8n has a public `https` URL. pingwa registers a
   webhook when you activate the workflow and removes it when you deactivate. It
   pushes each message the moment it arrives. It emits `{ event, message_id, body,
   button_id, reply_to_message_id, wa_message_id, window_open, created_at, media? }`.
-- **Pingwa Poll Trigger**: use this if n8n is local, LAN-only, or behind a
-  firewall. It pulls `/v1/inbox` on an interval. It emits the same fields except
-  `window_open` and `media`, because `/v1/inbox` does not return them. Inbound
-  images and voice notes arrive only through the webhook.
+- **Polling**: use this if n8n is local, LAN-only, or behind a firewall. It pulls
+  `/v1/inbox` on the schedule you set in **Poll Times**, and registers nothing on the
+  pingwa side. It emits the same fields except `window_open` and `media`, because
+  `/v1/inbox` does not return them. Inbound images and voice notes arrive only
+  through the webhook.
 
-Both have an **Events** option: All Inbound Messages or Replies Only.
+**Poll Times** is n8n's own field for polling nodes. It is ignored in Webhook mode.
+
+The **Events** option works in both modes: All Inbound Messages or Replies Only.
 
 ## Credentials
 
@@ -165,6 +167,10 @@ the node uses. Requires Node.js 20.15 or later, which matches n8n's own runtime.
 
 ## Version history
 
+- **0.1.6**: **Breaking.** The two triggers are now one node. `Pingwa Poll Trigger`
+  is gone; use `Pingwa Trigger` with **Delivery** set to `Polling` instead. A workflow
+  built on the old poll trigger keeps its settings but needs the node swapped.
+  Webhook teardown failures are now logged instead of dropped.
 - **0.1.5**: Passes the n8n verification ruleset — credential icons, typed
   connection types, wrapped API errors. Needs n8n 1.83 or later.
 - **0.1.4**: Plainer wording in the README and node fields.

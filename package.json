@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pingwa",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "n8n community node for the pingwa API — notify yourself on WhatsApp and get human-in-the-loop approvals for AI agents (hosted number, no Meta setup).",
   "keywords": [
     "n8n-community-node-package",
@@ -27,7 +27,8 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc -p tsconfig.build.json && gulp build:icons",
+    "clean": "node -e \"require('fs').rmSync('dist', { recursive: true, force: true })\"",
+    "build": "npm run clean && tsc -p tsconfig.build.json && gulp build:icons",
     "dev": "tsc -p tsconfig.build.json --watch",
     "lint": "eslint nodes credentials package.json",
     "lintfix": "eslint nodes credentials package.json --fix",
@@ -46,8 +47,7 @@
     ],
     "nodes": [
       "dist/nodes/Pingwa/Pingwa.node.js",
-      "dist/nodes/PingwaTrigger/PingwaTrigger.node.js",
-      "dist/nodes/PingwaPollTrigger/PingwaPollTrigger.node.js"
+      "dist/nodes/PingwaTrigger/PingwaTrigger.node.js"
     ]
   },
   "devDependencies": {
