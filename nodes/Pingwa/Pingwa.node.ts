@@ -7,7 +7,20 @@ import type {
   JsonObject,
 } from 'n8n-workflow';
 import { NodeApiError, NodeConnectionTypes, NodeOperationError } from 'n8n-workflow';
-import { pingwaApiRequest } from '../shared/GenericFunctions';
+import { buildRecipients, pingwaApiRequest } from '../shared/GenericFunctions';
+
+/** Add `to` to a send body, only when it is not the default "me". */
+function addRecipients(this: IExecuteFunctions, body: IDataObject, i: number): void {
+  const to = this.getNodeParameter('to', i, 'me') as string;
+  const members = this.getNodeParameter('toMembers', i, '') as string;
+  let value;
+  try {
+    value = buildRecipients(to, members);
+  } catch (e) {
+    throw new NodeOperationError(this.getNode(), (e as Error).message, { itemIndex: i });
+  }
+  if (value !== undefined) body.to = value;
+}
 
 export class Pingwa implements INodeType {
   description: INodeTypeDescription = {
@@ -72,7 +85,39 @@ export class Pingwa implements INodeType {
         default: '',
         required: true,
         placeholder: 'e.g. Backup finished: 42 GB in 6 minutes',
-        description: 'The WhatsApp message to send to your own linked number',
+        description: 'The WhatsApp message to send',
+        displayOptions: { show: { operation: ['notify'] } },
+      },
+      {
+        displayName: 'Send To',
+        name: 'to',
+        type: 'options',
+        options: [
+          { name: 'Me', value: 'me', description: 'Your own linked WhatsApp number' },
+          { name: 'Team', value: 'team', description: 'You and every active member of your team' },
+          { name: 'Specific Members', value: 'members', description: 'Pick team members by ID or name' },
+        ],
+        default: 'me',
+        description: 'Who receives the message',
+        displayOptions: { show: { operation: ['notify', 'ask'] } },
+      },
+      {
+        displayName: 'Members',
+        name: 'toMembers',
+        type: 'string',
+        default: '',
+        required: true,
+        placeholder: 'e.g. Ana, Bob',
+        description: 'Comma-separated member IDs or names. "me" means you.',
+        displayOptions: { show: { operation: ['notify', 'ask'], to: ['members'] } },
+      },
+      {
+        displayName: 'Ask for Acknowledgement',
+        name: 'ack',
+        type: 'boolean',
+        default: false,
+        description:
+          'Whether to add an "On it" button. The first tap is the reply. Needs a plan with acknowledgement and cannot be combined with an image.',
         displayOptions: { show: { operation: ['notify'] } },
       },
       {
@@ -170,6 +215,8 @@ export class Pingwa implements INodeType {
           const body: IDataObject = { text: this.getNodeParameter('text', i) as string };
           const imageUrl = this.getNodeParameter('imageUrl', i, '') as string;
           if (imageUrl) body.image_url = imageUrl;
+          addRecipients.call(this, body, i);
+          if (this.getNodeParameter('ack', i, false) === true) body.ack = true;
           const idem = this.getNodeParameter('idempotencyKey', i, '') as string;
           const headers = idem ? { 'Idempotency-Key': idem } : undefined;
           const res = await pingwaApiRequest.call(this, 'POST', '/v1/notify', body, undefined, headers);
@@ -179,6 +226,7 @@ export class Pingwa implements INodeType {
           const body: IDataObject = { text: this.getNodeParameter('askText', i) as string };
           const buttons = this.getNodeParameter('buttons', i, []) as string[];
           if (buttons.length) body.buttons = buttons;
+          addRecipients.call(this, body, i);
           const timeout = this.getNodeParameter('timeout', i, 0) as number;
           if (timeout > 0) body.timeout = timeout;
           const onTimeout = this.getNodeParameter('onTimeout', i, 'continue') as string;

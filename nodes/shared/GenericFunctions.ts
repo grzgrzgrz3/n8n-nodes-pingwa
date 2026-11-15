@@ -106,6 +106,27 @@ export async function pingwaApiRequest(
   });
 }
 
+/**
+ * The `to` value for a send request, or undefined to omit the field. "Me" is the
+ * server default, so it is omitted: a workflow saved before `to` existed sends the
+ * exact same body. Specific members go as a list of ids or names ("me" allowed).
+ */
+export function buildRecipients(
+  to: string,
+  members: string,
+): 'team' | string[] | undefined {
+  if (to === 'team') return 'team';
+  if (to === 'members') {
+    const list = members
+      .split(',')
+      .map((m) => m.trim())
+      .filter((m) => m.length > 0);
+    if (!list.length) throw new Error('Add at least one member id or name');
+    return list;
+  }
+  return undefined;
+}
+
 export interface InboxRow {
   id: string;
   body: string | null;
