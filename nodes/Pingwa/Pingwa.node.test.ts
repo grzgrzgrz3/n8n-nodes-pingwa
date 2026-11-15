@@ -3,7 +3,10 @@ import { Pingwa } from './Pingwa.node';
 type Sent = { method: string; url: string; body?: Record<string, unknown>; headers?: Record<string, string> };
 
 /** Run Pingwa.execute with the given node parameters and capture the one request it makes. */
-async function run(params: Record<string, unknown>, opts: { continueOnFail?: boolean } = {}) {
+async function run(
+  params: Record<string, unknown>,
+  opts: { continueOnFail?: boolean; response?: { statusCode: number; body: unknown } } = {},
+) {
   const sent: Sent[] = [];
   const ctx = {
     getInputData: () => [{ json: {} }],
@@ -15,7 +18,7 @@ async function run(params: Record<string, unknown>, opts: { continueOnFail?: boo
     helpers: {
       httpRequestWithAuthentication: async (_cred: string, o: Sent) => {
         sent.push({ method: o.method, url: o.url, body: o.body, headers: o.headers });
-        return { statusCode: 200, body: { id: 'm1' } };
+        return opts.response ?? { statusCode: 200, body: { id: 'm1' } };
       },
     },
   };
@@ -81,6 +84,43 @@ describe('Ask request body', () => {
   it('does not send ack even if the parameter leaks in (server ask has no ack)', async () => {
     const { sent } = await run({ ...ask, ack: true });
     expect(sent[0].body).toEqual({ text: 'ok?' });
+  });
+});
+
+describe('Ask timeout', () => {
+  const timedOut = { ...ask, timeout: 5, onTimeout: 'continue' };
+
+  it('reads message_id from the 408 body `detail`', async () => {
+    const { out } = await run(timedOut, {
+      response: { statusCode: 408, body: { detail: { error: 'ask_timeout', message_id: 'msg_42' } } },
+    });
+    expect(out[0][0].json).toEqual({ answered: false, timedOut: true, message_id: 'msg_42' });
+  });
+
+  it('still accepts a top-level message_id on the 408 body', async () => {
+    const { out } = await run(timedOut, { response: { statusCode: 408, body: { message_id: 'msg_43' } } });
+    expect(out[0][0].json).toEqual({ answered: false, timedOut: true, message_id: 'msg_43' });
+  });
+
+  it('reads the timeout_ok shape: 200 {message_id, answered: false}', async () => {
+    const { out } = await run(timedOut, {
+      response: { statusCode: 200, body: { message_id: 'msg_44', answered: false } },
+    });
+    expect(out[0][0].json).toEqual({ answered: false, timedOut: true, message_id: 'msg_44' });
+  });
+
+  it('timeout_ok shape honours On Timeout = error', async () => {
+    await expect(
+      run(
+        { ...ask, timeout: 5, onTimeout: 'error' },
+        { response: { statusCode: 200, body: { message_id: 'msg_45', answered: false } } },
+      ),
+    ).rejects.toThrow(/No reply before timeout/);
+  });
+
+  it('does not send timeout_ok (older servers)', async () => {
+    const { sent } = await run(timedOut);
+    expect(sent[0].body).toEqual({ text: 'ok?', timeout: 5 });
   });
 });
 

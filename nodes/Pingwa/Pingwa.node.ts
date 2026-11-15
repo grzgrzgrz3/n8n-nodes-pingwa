@@ -22,6 +22,15 @@ function addRecipients(this: IExecuteFunctions, body: IDataObject, i: number): v
   if (value !== undefined) body.to = value;
 }
 
+/** The 408 body is `{"detail": {"error": "ask_timeout", "message_id": "…"}}`; accept a top-level id too. */
+function timeoutMessageId(res: IDataObject): string | null {
+  const detail = res.detail;
+  if (detail && typeof detail === 'object' && (detail as IDataObject).message_id != null) {
+    return (detail as IDataObject).message_id as string;
+  }
+  return (res.message_id as string | undefined) ?? null;
+}
+
 export class Pingwa implements INodeType {
   description: INodeTypeDescription = {
     displayName: 'Pingwa',
@@ -235,12 +244,14 @@ export class Pingwa implements INodeType {
             this, 'POST', '/v1/ask', body, undefined, undefined, [408],
             timeout > 0 ? (timeout + 15) * 1000 : undefined,
           );
-          if ((res.__status as number) === 408) {
+          // Timeout arrives as a 408 (id under `detail`, older and current servers) or, when
+          // the server's `timeout_ok` opt-in is in play, as a 200 with `answered: false`.
+          if ((res.__status as number) === 408 || res.answered === false) {
             if (onTimeout === 'error') {
               throw new NodeOperationError(this.getNode(), 'No reply before timeout', { itemIndex: i });
             }
             out.push({
-              json: { answered: false, timedOut: true, message_id: res.message_id ?? null },
+              json: { answered: false, timedOut: true, message_id: timeoutMessageId(res) },
               pairedItem: { item: i },
             });
           } else {
