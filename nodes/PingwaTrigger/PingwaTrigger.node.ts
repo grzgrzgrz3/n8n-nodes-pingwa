@@ -35,8 +35,6 @@ export class PingwaTrigger implements INodeType {
     group: ['trigger'],
     version: 1,
     polling: true,
-    // Required by n8n verification lint; inert on a trigger (only action nodes become tools).
-    usableAsTool: true,
     subtitle:
       '={{ ({ webhook: "Webhook", poll: "Polling" })[$parameter["delivery"]] + ": " + ({ all: "All Inbound Messages", replies: "Replies Only" })[$parameter["events"]] }}',
     description: 'Starts the workflow when a WhatsApp message arrives via pingwa',
