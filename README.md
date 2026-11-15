@@ -39,6 +39,8 @@ The `Pingwa` and `Pingwa Trigger` nodes then appear in the node panel.
 Send a message. No reply expected.
 
 - **Message**: the text to send, for example `Backup finished: 42 GB in 6 minutes.`
+- **Send To**: who gets it. See [Send To and acknowledgement](#send-to-and-acknowledgement).
+- **Ask for Acknowledgement**: optional. Adds an "On it" button. See below.
 - **Image URL**: optional. Must be a public `https` URL.
 - **Idempotency Key**: optional. Resending with the same key does not send twice.
 
@@ -49,6 +51,7 @@ Output: `{ id, billing_class, status }`
 Send a question and hold the workflow until you answer, or until it times out.
 
 - **Question**: for example `Approve the $4,200 refund?`
+- **Send To**: who gets the question. See [Send To and acknowledgement](#send-to-and-acknowledgement).
 - **Buttons**: quick-reply titles, for example `Approve`, `Reject`
 - **Timeout (Seconds)**: `0` uses the server default, or set your own
 - **On Timeout**: continue with an empty reply, or fail the node
@@ -67,6 +70,27 @@ an execution open.
 - **Wait (Seconds)**: wait up to this many seconds for a reply. `0` returns at once.
 
 Output: `{ message_id, answered, reply }`
+
+### Send To and acknowledgement
+
+**Send To** is on Notify and Ask. It has three choices:
+
+- **Me** (default): your own linked WhatsApp number. The node leaves `to` out of the
+  request, so workflows built before 0.1.7 send exactly what they sent before.
+- **Team**: you and every active member of your pingwa team (`to: "team"`).
+- **Specific Members**: a comma-separated list of member IDs or names, for example
+  `Ana, Bob`. `me` in the list means you. An empty list fails the node, so a typo
+  never falls back to sending to yourself.
+
+Each person who receives it counts against your quota. If your plan or the team
+setup does not allow the send, pingwa answers with an error and the node shows it.
+
+**Ask for Acknowledgement** is on Notify only. Switch it on to add an **On it**
+button to the message. The first tap is the answer, which you can read with
+**Get Reply**, and the others on the team are told who took it. It needs a plan that
+includes acknowledgement, and it cannot be combined with **Image URL**. It is off by
+default, and the node then leaves `ack` out of the request. Ask has no
+acknowledgement option, because you already choose its answer buttons.
 
 ### Pingwa Trigger
 
@@ -137,13 +161,13 @@ different problems, and they work well side by side.
 |---|---|---|
 | Number | **Your own** WhatsApp Business number | A number **pingwa hosts** |
 | Setup | Meta Business verification, phone number, app | Send `join` once, or click Connect |
-| Who you message | Any customer who opted in | **Only your own linked WhatsApp** |
+| Who you message | Any customer who opted in | **Your own linked WhatsApp**, or members of your own pingwa team |
 | Best for | Customer messaging at scale | Notifying **yourself** and approvals |
 
 Use the built-in node to message customers from your own WhatsApp Business
-account. Use pingwa when you want a workflow to ping **you**. There is no Meta
-setup, and no way to message anyone but yourself, so there is no outreach or spam
-surface.
+account. Use pingwa when you want a workflow to ping **you** or your team. There is
+no Meta setup, and you can message only yourself and members who joined your pingwa
+team, so there is no outreach or spam surface.
 
 ## Compatibility
 
@@ -167,6 +191,9 @@ the node uses. Requires Node.js 20.15 or later, which matches n8n's own runtime.
 
 ## Version history
 
+- **0.1.7**: New **Send To** option on Notify and Ask (Me, Team, or specific members)
+  and new **Ask for Acknowledgement** option on Notify. Both are off by default and
+  leave the request unchanged, so existing workflows behave as before.
 - **0.1.6**: **Breaking.** The two triggers are now one node. `Pingwa Poll Trigger`
   is gone; use `Pingwa Trigger` with **Delivery** set to `Polling` instead. A workflow
   built on the old poll trigger keeps its settings but needs the node swapped.

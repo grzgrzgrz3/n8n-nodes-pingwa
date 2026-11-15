@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-pingwa",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "n8n community node for the pingwa API — notify yourself on WhatsApp and get human-in-the-loop approvals for AI agents (hosted number, no Meta setup).",
   "keywords": [
     "n8n-community-node-package",
