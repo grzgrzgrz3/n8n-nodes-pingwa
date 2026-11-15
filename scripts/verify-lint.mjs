@@ -20,7 +20,11 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 const SCANNER = '@n8n/scan-community-package@beta';
 const repoRoot = join(dirname(fileURLToPath(import.meta.url)), '..');
 const cacheDir = join(repoRoot, 'node_modules', '.cache', 'n8n-verify');
-const scannerEntry = join(cacheDir, 'node_modules', '@n8n', 'scan-community-package', 'scanner', 'scanner.mjs');
+const scannerRoot = join(cacheDir, 'node_modules', '@n8n', 'scan-community-package');
+// The beta moved its entry from scanner/scanner.mjs to dist/scanner.js (0.43); the exports
+// (analyzePackage, SOURCE_FILE_PATTERNS) are the same. Accept either layout.
+const scannerEntries = [join(scannerRoot, 'dist', 'scanner.js'), join(scannerRoot, 'scanner', 'scanner.mjs')];
+const findEntry = () => scannerEntries.find((p) => existsSync(p));
 
 /**
  * The cache must track the published beta, not the version that happened to be current
@@ -45,7 +49,7 @@ function cachedVersion() {
 const wanted = publishedBetaVersion();
 const cached = cachedVersion();
 
-if (!existsSync(scannerEntry) || (wanted && wanted !== cached)) {
+if (!findEntry() || (wanted && wanted !== cached)) {
   const why = cached ? `cached ${cached}, published beta ${wanted}` : 'not cached yet';
   console.log(`Installing ${SCANNER} into ${cacheDir} (${why}) ...`);
   mkdirSync(cacheDir, { recursive: true });
@@ -59,7 +63,7 @@ if (!existsSync(scannerEntry) || (wanted && wanted !== cached)) {
   console.warn(`⚠ npm unreachable — linting with the cached scanner ${cached}, which may be behind the portal`);
 }
 
-const { analyzePackage, SOURCE_FILE_PATTERNS } = await import(pathToFileURL(scannerEntry).href);
+const { analyzePackage, SOURCE_FILE_PATTERNS } = await import(pathToFileURL(findEntry()).href);
 const result = await analyzePackage(process.argv[2] ?? repoRoot, SOURCE_FILE_PATTERNS);
 
 if (result.passed) {
