@@ -9,7 +9,7 @@ on:
 
 permissions:
   contents: read
-  id-token: write # required for npm provenance (OIDC)
+  id-token: write # npm trusted publishing and provenance (OIDC)
 
 jobs:
   publish:
@@ -38,6 +38,8 @@ jobs:
 
       - run: npm test
 
+      # Trusted publishing (OIDC, configured on npmjs.com for publish.yml): no token
+      # to expire. Needs npm >= 11.5.1; Node 22 ships npm 10.
+      - run: npm install -g npm@11
+
       - run: npm publish --provenance --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
