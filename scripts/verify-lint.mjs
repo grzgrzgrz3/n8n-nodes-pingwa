@@ -63,8 +63,16 @@ if (!findEntry() || (wanted && wanted !== cached)) {
   console.warn(`⚠ npm unreachable — linting with the cached scanner ${cached}, which may be behind the portal`);
 }
 
-const { analyzePackage, SOURCE_FILE_PATTERNS } = await import(pathToFileURL(findEntry()).href);
-const result = await analyzePackage(process.argv[2] ?? repoRoot, SOURCE_FILE_PATTERNS);
+const scanner = await import(pathToFileURL(findEntry()).href);
+const target = process.argv[2] ?? repoRoot;
+// 0.44 replaced analyzePackage(dir, patterns) with analyzeLocalPackage(dir); the npm
+// provenance and attested-source checks only run after publishing (skippedChecks).
+const result = scanner.analyzeLocalPackage
+  ? await scanner.analyzeLocalPackage(target)
+  : await scanner.analyzePackage(target, scanner.SOURCE_FILE_PATTERNS);
+if (result.passed && result.skippedChecks?.length) {
+  console.log(`(local scan: ${result.skippedChecks.join(', ')} run after publishing)`);
+}
 
 if (result.passed) {
   console.log('✅ n8n verification ruleset passed');
